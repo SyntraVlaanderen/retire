@@ -13,11 +13,21 @@ module Tire
       def terms(field, options={})
         size      = options.delete(:size) || 10
         all_terms = options.delete(:all_terms) || false
-        @value[:terms] = if field.is_a?(Enumerable) and not field.is_a?(String)
+        
+        facet = if field.is_a?(Enumerable) and not field.is_a?(String)
           { :fields => field }.update({ :size => size, :all_terms => all_terms }).update(options)
         else
           { :field => field  }.update({ :size => size, :all_terms => all_terms }).update(options)
         end
+
+        if @options.key?(:facet_filters)
+          @options.delete(:facet_filters)
+          @value[:aggs] = { filters: { terms: nil }}
+          @value[:aggs][:filters][:terms] = facet
+        else
+          @value[:terms] = facet
+        end
+
         self
       end
 
@@ -63,7 +73,7 @@ module Tire
       end
 
       def facet_filter(type, *options)
-        @value[:facet_filter] = Filter.new(type, *options).to_hash
+        @value[:filter] = Filter.new(type, *options).to_hash
         self
       end
 
