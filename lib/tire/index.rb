@@ -177,6 +177,12 @@ module Tire
         type = get_type_from_document(document, :escape => false) # Do not URL-escape the _type
         id   = get_id_from_document(document)
 
+        # Patch for ES >= 2.0
+        if document.kind_of?(Hash)
+          document.delete(:_id) || document.delete('_id') || document.delete(:id) || document.delete('id')
+          document.delete(:_type) || document.delete('_type') || document.delete(:type) || document.delete('type')
+        end
+
         if ENV['DEBUG']
           STDERR.puts "[ERROR] Document #{document.inspect} does not have ID" unless id
         end
