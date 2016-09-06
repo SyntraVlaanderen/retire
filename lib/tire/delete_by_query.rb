@@ -11,7 +11,6 @@ module Tire
 
       if block_given?
         @query = Search::Query.new
-        block.arity < 1 ? @query.instance_eval(&block) : block.call(@query)
       else
         raise "no query given for #{self.class}"
       end
@@ -20,13 +19,22 @@ module Tire
     def perform
       @response = Configuration.client.delete url
       if @response.failure?
-        STDERR.puts "[REQUEST FAILED] #{self.to_curl}\n"
+        STDERR.puts "[REQUEST FAILED] #{to_curl}\n"
         raise DeleteByQueryRequestFailed, @response.to_s
       end
       @json = MultiJson.decode(@response.body)
       true
     ensure
       logged
+    end
+
+    def to_json(options={})
+      {query: query}.to_json
+    end
+
+    #Can be handy while debugging
+    def to_curl
+      %Q|curl -X DELETE '#{url}'|
     end
 
     private
@@ -44,13 +52,6 @@ module Tire
       "#{Configuration.url}#{path}/?source=#{Utils.escape(to_json)}"
     end
 
-    def to_json(options={})
-      query.to_json
-    end
-
-    def to_curl
-      %Q|curl -X DELETE '#{url}'|
-    end
 
     def logged(endpoint='_query')
       if Configuration.logger
